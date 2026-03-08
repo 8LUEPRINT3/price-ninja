@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>🥷 price-ninja — Deal Search</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d1117;color:#e6edf3;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+.header{background:#010409;border-bottom:1px solid #21262d;padding:14px 24px;display:flex;align-items:center;gap:16px}
+.logo{font-size:22px;font-weight:800;color:#58a6ff;letter-spacing:1px}
+.logo span{color:#484f58;font-weight:400}
+.tagline{font-size:11px;color:#484f58;margin-top:2px}
+.search-panel{background:#161b22;border-bottom:1px solid #21262d;padding:18px 24px}
+.search-row{display:flex;gap:10px;flex-wrap:wrap;max-width:1200px;margin:0 auto}
+.search-box{flex:3;min-width:180px;position:relative}
+.search-box input{width:100%;background:#0d1117;border:1px solid #30363d;color:#e6edf3;padding:10px 14px 10px 38px;border-radius:8px;font-size:14px;outline:none;transition:border-color .2s}
+.search-box input:focus{border-color:#58a6ff}
+.search-box .icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none}
+select{background:#0d1117;border:1px solid #30363d;color:#e6edf3;padding:10px 10px;border-radius:8px;font-size:13px;cursor:pointer;outline:none;min-width:130px;transition:border-color .2s}
+select:focus{border-color:#58a6ff}
+.btn-search{background:#238636;border:none;color:#fff;padding:10px 22px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s;white-space:nowrap}
+.btn-search:hover{background:#2ea043}
+.btn-search:disabled{background:#1a3a1a;color:#484f58;cursor:not-allowed}
+.location-bar{max-width:1200px;margin:10px auto 0;display:flex;align-items:center;gap:8px;font-size:12px;color:#484f58}
+.postal-badge{background:#21262d;border:1px solid #30363d;border-radius:4px;padding:2px 8px;font-size:11px;font-family:monospace;color:#58a6ff}
+.suggestions{display:flex;gap:6px;flex-wrap:wrap;max-width:1200px;margin:10px auto 0}
+.suggestion{background:#21262d;border:1px solid #30363d;color:#8b949e;padding:4px 12px;border-radius:20px;font-size:11px;cursor:pointer;transition:all .15s}
+.suggestion:hover{background:#30363d;color:#e6edf3;border-color:#58a6ff}
+.results-area{max-width:1200px;margin:0 auto;padding:20px 24px}
+.status-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-size:12px;color:#484f58;flex-wrap:wrap;gap:8px}
+.result-count{color:#56d364;font-weight:700;font-size:14px}
+.sort-bar{display:flex;gap:6px;align-items:center}
+.sort-btn{background:#161b22;border:1px solid #21262d;color:#484f58;padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer}
+.sort-btn.active{border-color:#58a6ff;color:#58a6ff}
+.filter-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.filter-pill{background:#21262d;border:1px solid #30363d;color:#8b949e;padding:4px 12px;border-radius:20px;font-size:11px;cursor:pointer;transition:all .15s}
+.filter-pill.active{background:#1f6feb33;border-color:#58a6ff;color:#58a6ff}
+.deals-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.deal-card{background:#161b22;border:1px solid #21262d;border-radius:10px;overflow:hidden;transition:border-color .2s,transform .15s;cursor:pointer}
+.deal-card:hover{border-color:#30363d;transform:translateY(-2px)}
+.deal-card.has-savings{border-color:#238636}
+.card-img{width:100%;height:120px;object-fit:contain;background:#0d1117;padding:8px}
+.card-img.no-img{display:flex;align-items:center;justify-content:center;font-size:34px;height:120px;background:#0d1117}
+.card-body{padding:12px}
+.card-store{font-size:10px;color:#484f58;text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px}
+.card-name{font-size:13px;font-weight:600;line-height:1.4;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-price-row{display:flex;align-items:baseline;gap:8px;margin-bottom:4px}
+.card-price{font-size:22px;font-weight:800;color:#56d364;font-family:'Courier New',monospace}
+.card-price.no-price{font-size:13px;color:#484f58}
+.card-original{font-size:12px;color:#484f58;text-decoration:line-through}
+.card-savings{background:#238636;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;display:inline-block;margin-bottom:5px}
+.card-expires{font-size:10px;color:#484f58;margin-bottom:8px}
+.card-link{display:block;text-align:center;background:#21262d;color:#58a6ff;text-decoration:none;padding:6px;border-radius:6px;font-size:12px;font-weight:600;transition:background .15s}
+.card-link:hover{background:#30363d}
+.state-empty{text-align:center;padding:80px 20px;color:#484f58}
+.state-empty .emoji{font-size:48px;margin-bottom:16px}
+.state-empty h3{font-size:16px;color:#8b949e;margin-bottom:8px}
+.state-loading{text-align:center;padding:60px;color:#484f58}
+.spinner{display:inline-block;width:32px;height:32px;border:3px solid #21262d;border-top-color:#58a6ff;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.no-results{grid-column:1/-1;text-align:center;padding:60px;color:#484f58}
+.cors-note{background:#1c2a1c;border:1px solid #238636;border-radius:8px;padding:12px 16px;font-size:12px;color:#56d364;margin-bottom:14px;display:none}
+.toast{position:fixed;bottom:24px;right:24px;background:#161b22;border:1px solid #21262d;border-radius:8px;padding:12px 16px;font-size:13px;opacity:0;transform:translateY(10px);transition:all .3s;z-index:100}
+.toast.show{opacity:1;transform:translateY(0)}
+@media(max-width:640px){.search-row{flex-direction:column}.header{padding:12px 16px}.search-panel{padding:14px 16px}.results-area{padding:14px 16px}.deals-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}.card-price{font-size:18px}.status-bar{flex-direction:column;align-items:flex-start}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="logo">🥷 price<span>-</span>ninja</div>
+    <div class="tagline">Live flyer deals · Canada &amp; All 50 US States</div>
+  </div>
+</div>
+
+<div class="search-panel">
+  <div class="search-row">
+    <div class="search-box" style="flex:3">
+      <span class="icon">🔍</span>
+      <input type="text" id="q" placeholder="Search: chicken, rice, eggs, oat milk, laptop..." autocomplete="off"/>
+    </div>
+    <select id="country" onchange="loadProvinces()">
+      <option value="CA">🇨🇦 Canada</option>
+      <option value="US">🇺🇸 United States</option>
+    </select>
+    <select id="province" onchange="loadCities()">
+      <option value="">Select region...</option>
+    </select>
+    <select id="city" onchange="updatePostal()">
+      <option value="">Select city...</option>
+    </select>
+    <button class="btn-search" onclick="doSearch()" id="btn-search">Search Deals</button>
+  </div>
+  <div class="location-bar">
+    <span>📍</span>
+    <span id="location-text">Select your location above</span>
+    <span class="postal-badge" id="postal-display" style="display:none"></span>
+  </div>
+  <div class="suggestions">
+    <span style="font-size:11px;color:#484f58;align-self:center">Try:</span>
+    <span class="suggestion" onclick="quickSearch('chicken')">chicken</span>
+    <span class="suggestion" onclick="quickSearch('eggs')">eggs</span>
+    <span class="suggestion" onclick="quickSearch('rice')">rice</span>
+    <span class="suggestion" onclick="quickSearch('milk')">milk</span>
+    <span class="suggestion" onclick="quickSearch('bread')">bread</span>
+    <span class="suggestion" onclick="quickSearch('pasta')">pasta</span>
+    <span class="suggestion" onclick="quickSearch('onion')">onion</span>
+    <span class="suggestion" onclick="quickSearch('banana')">banana</span>
+    <span class="suggestion" onclick="quickSearch('cheese')">cheese</span>
+    <span class="suggestion" onclick="quickSearch('yogurt')">yogurt</span>
+    <span class="suggestion" onclick="quickSearch('salmon')">salmon</span>
+    <span class="suggestion" onclick="quickSearch('coffee')">coffee</span>
+    <span class="suggestion" onclick="quickSearch('cereal')">cereal</span>
+    <span class="suggestion" onclick="quickSearch('detergent')">detergent</span>
+    <span class="suggestion" onclick="quickSearch('laptop')">laptop</span>
+  </div>
+</div>
+
+<div class="results-area">
+  <div id="cors-note" class="cors-note">
+    ⚠️ Browser blocked the request (CORS). Flipp restricts direct browser access from some domains.
+    Try opening this page from <strong>file://</strong> or a local server, or use the
+    <a href="https://github.com/8LUEPRINT3/price-ninja" style="color:#56d364">self-hosted version</a>.
+  </div>
+  <div id="status-bar" class="status-bar" style="display:none">
+    <div>
+      <span id="result-count" class="result-count">0</span>
+      <span style="color:#484f58"> deals for </span>
+      <span id="result-query" style="color:#e6edf3;font-weight:600"></span>
+      <span style="color:#484f58"> near </span>
+      <span id="result-location" style="color:#e6edf3"></span>
+    </div>
+    <div class="sort-bar">
+      <span>Sort:</span>
+      <button class="sort-btn active" id="sort-savings" onclick="sortDeals('savings')">Best savings</button>
+      <button class="sort-btn" id="sort-price" onclick="sortDeals('price')">Lowest price</button>
+      <button class="sort-btn" id="sort-store" onclick="sortDeals('store')">Store A–Z</button>
+    </div>
+  </div>
+  <div class="filter-bar" id="filter-bar" style="display:none">
+    <span style="font-size:11px;color:#484f58;align-self:center">Filter:</span>
+    <span class="filter-pill active" onclick="filterDeals('all',this)">All</span>
+    <span class="filter-pill" onclick="filterDeals('savings',this)">On Sale</span>
+    <span class="filter-pill" onclick="filterDeals('under5',this)">Under $5</span>
+    <span class="filter-pill" onclick="filterDeals('under10',this)">Under $10</span>
+    <span class="filter-pill" onclick="filterDeals('under20',this)">Under $20</span>
+  </div>
+  <div id="results-container">
+    <div class="state-empty">
+      <div class="emoji">🥷</div>
+      <h3>Find deals near you</h3>
+      <p style="font-size:12px;margin-top:6px">Pick your country → region → city, then search any item</p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const LOCATIONS = {"CA":{"name":"Canada","provinces":{"AB":{"name":"Alberta","cities":{"Calgary":"T2P1A1","Edmonton":"T5J1A1","Red Deer":"T4N1A1","Lethbridge":"T1J1A1","St. Albert":"T8N1A1","Medicine Hat":"T1A1A1","Airdrie":"T4B1A1","Grande Prairie":"T8V1A1","Spruce Grove":"T7X1A1","Leduc":"T9E1A1"}},"BC":{"name":"British Columbia","cities":{"Vancouver":"V6B1A1","Surrey":"V3S1A1","Burnaby":"V5C1A1","Richmond":"V6X1A1","Kelowna":"V1Y1A1","Abbotsford":"V2S1A1","Coquitlam":"V3B1A1","Langley":"V1M1A1","Victoria":"V8W1A1","Nanaimo":"V9R1A1","Prince George":"V2L1A1","Kamloops":"V2C1A1","Chilliwack":"V2P1A1","Delta":"V4K1A1"}},"MB":{"name":"Manitoba","cities":{"Winnipeg":"R3B1A1","Brandon":"R7A1A1","Steinbach":"R5G1A1","Thompson":"R8N1A1","Portage la Prairie":"R1N1A1"}},"NB":{"name":"New Brunswick","cities":{"Moncton":"E1C1A1","Saint John":"E2L1A1","Fredericton":"E3B1A1","Dieppe":"E1A1A1","Miramichi":"E1V1A1"}},"NL":{"name":"Newfoundland & Labrador","cities":{"St. John's":"A1A1A1","Corner Brook":"A2H1A1","Grand Falls-Windsor":"A2A1A1","Gander":"A1V1A1"}},"NS":{"name":"Nova Scotia","cities":{"Halifax":"B3H1A1","Dartmouth":"B2W1A1","Sydney":"B1P1A1","Truro":"B2N1A1","New Glasgow":"B2H1A1"}},"ON":{"name":"Ontario","cities":{"Toronto":"M5V2T6","Ottawa":"K1P5G4","Mississauga":"L5B1M2","Brampton":"L6T1A1","Hamilton":"L8N3T2","London":"N6A1G1","Markham":"L3R0A1","Vaughan":"L4K1G8","Kitchener":"N2G1H6","Windsor":"N9A1E1","Barrie":"L4M3X9","Oshawa":"L1H1A1","Sudbury":"P3A1M2","Thunder Bay":"P7B1A2","Kingston":"K7L2N4","Guelph":"N1H1A1","Waterloo":"N2J1A1","Cambridge":"N1R1A1","Burlington":"L7R1A1","Oakville":"L6H1A1","Richmond Hill":"L4B1A1","Ajax":"L1S1A1","Pickering":"L1V1A1","Sarnia":"N7T1A1","Sault Ste. Marie":"P6A1A1","Peterborough":"K9H1A1","Brantford":"N3T1A1"}},"PE":{"name":"Prince Edward Island","cities":{"Charlottetown":"C1A1A1","Summerside":"C1N1A1"}},"QC":{"name":"Quebec","cities":{"Montreal":"H2X1A1","Quebec City":"G1R1A1","Laval":"H7N1A1","Gatineau":"J8Y1A1","Longueuil":"J4H1A1","Sherbrooke":"J1H1A1","Saguenay":"G7H1A1","Levis":"G6V1A1","Trois-Rivieres":"G9A1A1","Terrebonne":"J6W1A1","Saint-Jean-sur-Richelieu":"J3B1A1","Repentigny":"J6A1A1"}},"SK":{"name":"Saskatchewan","cities":{"Saskatoon":"S7K1A1","Regina":"S4P1A1","Prince Albert":"S6V1A1","Moose Jaw":"S6H1A1","Swift Current":"S9H1A1"}}}},"US":{"name":"United States","provinces":{"AL":{"name":"Alabama","cities":{"Birmingham":"35203","Montgomery":"36104","Huntsville":"35801","Mobile":"36602","Tuscaloosa":"35401","Hoover":"35244","Dothan":"36301"}},"AK":{"name":"Alaska","cities":{"Anchorage":"99501","Fairbanks":"99701","Juneau":"99801","Sitka":"99835","Ketchikan":"99901"}},"AZ":{"name":"Arizona","cities":{"Phoenix":"85001","Tucson":"85701","Mesa":"85201","Chandler":"85224","Scottsdale":"85251","Glendale":"85301","Gilbert":"85234","Tempe":"85281","Peoria":"85345","Surprise":"85374"}},"AR":{"name":"Arkansas","cities":{"Little Rock":"72201","Fort Smith":"72901","Fayetteville":"72701","Springdale":"72764","Jonesboro":"72401"}},"CA":{"name":"California","cities":{"Los Angeles":"90001","San Francisco":"94102","San Diego":"92101","San Jose":"95101","Sacramento":"95814","Oakland":"94601","Long Beach":"90801","Fresno":"93701","Bakersfield":"93301","Anaheim":"92801","Santa Ana":"92701","Riverside":"92501","Stockton":"95201","Irvine":"92602","Chula Vista":"91910","Fremont":"94536","San Bernardino":"92401","Modesto":"95354","Fontana":"92335","Moreno Valley":"92553"}},"CO":{"name":"Colorado","cities":{"Denver":"80202","Colorado Springs":"80903","Aurora":"80010","Fort Collins":"80521","Lakewood":"80226","Thornton":"80229","Arvada":"80002","Westminster":"80030","Pueblo":"81003","Boulder":"80302"}},"CT":{"name":"Connecticut","cities":{"Bridgeport":"06604","New Haven":"06510","Stamford":"06901","Hartford":"06103","Waterbury":"06701","Norwalk":"06850","Danbury":"06810"}},"DE":{"name":"Delaware","cities":{"Wilmington":"19801","Dover":"19901","Newark":"19711","Middletown":"19709"}},"FL":{"name":"Florida","cities":{"Jacksonville":"32099","Miami":"33101","Tampa":"33601","Orlando":"32801","St. Petersburg":"33701","Hialeah":"33002","Tallahassee":"32301","Fort Lauderdale":"33301","Cape Coral":"33904","Port St. Lucie":"34952","Pembroke Pines":"33024","Hollywood":"33020","Miramar":"33023","Gainesville":"32601","Coral Springs":"33065","Clearwater":"33755"}},"GA":{"name":"Georgia","cities":{"Atlanta":"30301","Augusta":"30901","Columbus":"31901","Savannah":"31401","Athens":"30601","Sandy Springs":"30328","Roswell":"30075","Macon":"31201","Albany":"31701"}},"HI":{"name":"Hawaii","cities":{"Honolulu":"96813","Hilo":"96720","Kailua":"96734","Pearl City":"96782","Waipahu":"96797"}},"ID":{"name":"Idaho","cities":{"Boise":"83702","Nampa":"83651","Meridian":"83642","Idaho Falls":"83401","Pocatello":"83201","Caldwell":"83605"}},"IL":{"name":"Illinois","cities":{"Chicago":"60601","Aurora":"60505","Naperville":"60540","Joliet":"60431","Rockford":"61101","Springfield":"62701","Elgin":"60120","Peoria":"61602","Champaign":"61820","Waukegan":"60085"}},"IN":{"name":"Indiana","cities":{"Indianapolis":"46204","Fort Wayne":"46802","Evansville":"47708","South Bend":"46601","Carmel":"46032","Bloomington":"47401","Hammond":"46320","Gary":"46401","Fishers":"46038"}},"IA":{"name":"Iowa","cities":{"Des Moines":"50309","Cedar Rapids":"52401","Davenport":"52801","Sioux City":"51101","Iowa City":"52240","Waterloo":"50701","Ames":"50010"}},"KS":{"name":"Kansas","cities":{"Wichita":"67202","Overland Park":"66204","Kansas City":"66101","Topeka":"66603","Olathe":"66061","Lawrence":"66044","Shawnee":"66203"}},"KY":{"name":"Kentucky","cities":{"Louisville":"40202","Lexington":"40502","Bowling Green":"42101","Owensboro":"42301","Covington":"41011","Richmond":"40475"}},"LA":{"name":"Louisiana","cities":{"New Orleans":"70112","Baton Rouge":"70801","Shreveport":"71101","Metairie":"70001","Lafayette":"70501","Lake Charles":"70601","Kenner":"70062"}},"ME":{"name":"Maine","cities":{"Portland":"04101","Lewiston":"04240","Bangor":"04401","South Portland":"04106","Auburn":"04210"}},"MD":{"name":"Maryland","cities":{"Baltimore":"21201","Frederick":"21701","Rockville":"20850","Gaithersburg":"20877","Bowie":"20715","Hagerstown":"21740","Annapolis":"21401","College Park":"20740"}},"MA":{"name":"Massachusetts","cities":{"Boston":"02101","Worcester":"01601","Springfield":"01103","Cambridge":"02139","Lowell":"01852","Brockton":"02301","Quincy":"02169","Lynn":"01901","Newton":"02458"}},"MI":{"name":"Michigan","cities":{"Detroit":"48201","Grand Rapids":"49501","Warren":"48088","Sterling Heights":"48310","Lansing":"48901","Ann Arbor":"48101","Flint":"48501","Dearborn":"48120","Livonia":"48150","Troy":"48083","Westland":"48185","Kalamazoo":"49001"}},"MN":{"name":"Minnesota","cities":{"Minneapolis":"55401","Saint Paul":"55101","Rochester":"55901","Duluth":"55801","Bloomington":"55420","Brooklyn Park":"55443","Plymouth":"55441","Saint Cloud":"56301","Eagan":"55121"}},"MS":{"name":"Mississippi","cities":{"Jackson":"39201","Gulfport":"39501","Southaven":"38671","Hattiesburg":"39401","Biloxi":"39530","Meridian":"39301"}},"MO":{"name":"Missouri","cities":{"Kansas City":"64106","Saint Louis":"63101","Springfield":"65806","Columbia":"65201","Independence":"64050","Lee's Summit":"64063","O'Fallon":"63366","St. Joseph":"64501"}},"MT":{"name":"Montana","cities":{"Billings":"59101","Missoula":"59801","Great Falls":"59401","Bozeman":"59715","Butte":"59701","Helena":"59601"}},"NE":{"name":"Nebraska","cities":{"Omaha":"68102","Lincoln":"68501","Bellevue":"68005","Grand Island":"68801","Kearney":"68847"}},"NV":{"name":"Nevada","cities":{"Las Vegas":"89101","Henderson":"89002","Reno":"89501","North Las Vegas":"89030","Sparks":"89431","Carson City":"89701"}},"NH":{"name":"New Hampshire","cities":{"Manchester":"03101","Nashua":"03060","Concord":"03301","Derry":"03038","Dover":"03820"}},"NJ":{"name":"New Jersey","cities":{"Newark":"07102","Jersey City":"07302","Paterson":"07501","Elizabeth":"07201","Edison":"08817","Toms River":"08753","Clifton":"07011","Trenton":"08608","Camden":"08101"}},"NM":{"name":"New Mexico","cities":{"Albuquerque":"87101","Las Cruces":"88001","Rio Rancho":"87124","Santa Fe":"87501","Roswell":"88201","Farmington":"87401"}},"NY":{"name":"New York","cities":{"New York City":"10001","Brooklyn":"11201","Queens":"11101","Bronx":"10451","Buffalo":"14201","Rochester":"14601","Yonkers":"10701","Syracuse":"13201","Albany":"12201","New Rochelle":"10801","Mount Vernon":"10550","Schenectady":"12305"}},"NC":{"name":"North Carolina","cities":{"Charlotte":"28201","Raleigh":"27601","Greensboro":"27401","Durham":"27701","Winston-Salem":"27101","Fayetteville":"28301","Cary":"27511","Wilmington":"28401","High Point":"27260","Concord":"28025","Asheville":"28801"}},"ND":{"name":"North Dakota","cities":{"Fargo":"58102","Bismarck":"58501","Grand Forks":"58201","Minot":"58701","West Fargo":"58078"}},"OH":{"name":"Ohio","cities":{"Columbus":"43201","Cleveland":"44101","Cincinnati":"45201","Toledo":"43601","Akron":"44301","Dayton":"45401","Parma":"44129","Canton":"44702","Youngstown":"44501","Lorain":"44052"}},"OK":{"name":"Oklahoma","cities":{"Oklahoma City":"73102","Tulsa":"74103","Norman":"73019","Broken Arrow":"74011","Edmond":"73003","Lawton":"73501","Moore":"73160"}},"OR":{"name":"Oregon","cities":{"Portland":"97201","Salem":"97301","Eugene":"97401","Gresham":"97030","Hillsboro":"97123","Beaverton":"97005","Bend":"97701","Medford":"97501","Springfield":"97477"}},"PA":{"name":"Pennsylvania","cities":{"Philadelphia":"19102","Pittsburgh":"15201","Allentown":"18101","Erie":"16501","Reading":"19601","Scranton":"18503","Bethlehem":"18015","Lancaster":"17602","Harrisburg":"17101","Altoona":"16601"}},"RI":{"name":"Rhode Island","cities":{"Providence":"02903","Cranston":"02910","Warwick":"02888","Pawtucket":"02860","East Providence":"02914"}},"SC":{"name":"South Carolina","cities":{"Columbia":"29201","Charleston":"29401","North Charleston":"29405","Mount Pleasant":"29464","Rock Hill":"29730","Greenville":"29601","Summerville":"29483"}},"SD":{"name":"South Dakota","cities":{"Sioux Falls":"57104","Rapid City":"57701","Aberdeen":"57401","Brookings":"57006","Watertown":"57201"}},"TN":{"name":"Tennessee","cities":{"Nashville":"37201","Memphis":"38103","Knoxville":"37902","Chattanooga":"37402","Clarksville":"37040","Murfreesboro":"37130","Franklin":"37064","Jackson":"38301"}},"TX":{"name":"Texas","cities":{"Houston":"77001","San Antonio":"78201","Dallas":"75201","Austin":"78701","Fort Worth":"76101","El Paso":"79901","Arlington":"76010","Corpus Christi":"78401","Plano":"75023","Lubbock":"79401","Laredo":"78040","Irving":"75061","Garland":"75040","Amarillo":"79101","Grand Prairie":"75051","McKinney":"75069","Frisco":"75034","Brownsville":"78520","Pasadena":"77501","Mesquite":"75149"}},"UT":{"name":"Utah","cities":{"Salt Lake City":"84101","West Valley City":"84119","Provo":"84601","West Jordan":"84084","Orem":"84057","Sandy":"84070","Ogden":"84401","St. George":"84770","Layton":"84040"}},"VT":{"name":"Vermont","cities":{"Burlington":"05401","South Burlington":"05403","Rutland":"05701","Essex Junction":"05452","Montpelier":"05602"}},"VA":{"name":"Virginia","cities":{"Virginia Beach":"23451","Norfolk":"23501","Chesapeake":"23320","Richmond":"23219","Newport News":"23601","Alexandria":"22301","Hampton":"23669","Roanoke":"24011","Portsmouth":"23704","Suffolk":"23434"}},"WA":{"name":"Washington","cities":{"Seattle":"98101","Spokane":"99201","Tacoma":"98401","Vancouver":"98661","Bellevue":"98004","Kent":"98031","Everett":"98201","Renton":"98055","Federal Way":"98003","Spokane Valley":"99206","Bellingham":"98225"}},"WV":{"name":"West Virginia","cities":{"Charleston":"25301","Huntington":"25701","Morgantown":"26501","Parkersburg":"26101","Wheeling":"26003"}},"WI":{"name":"Wisconsin","cities":{"Milwaukee":"53202","Madison":"53703","Green Bay":"54301","Kenosha":"53140","Racine":"53401","Appleton":"54911","Waukesha":"53186","Oshkosh":"54901","Eau Claire":"54701"}},"WY":{"name":"Wyoming","cities":{"Cheyenne":"82001","Casper":"82601","Laramie":"82070","Gillette":"82716","Rock Springs":"82901"}},"DC":{"name":"Washington D.C.","cities":{"Washington":"20001","Georgetown":"20007","Capitol Hill":"20003","Adams Morgan":"20009"}}}}};
+const PROXY_BASE = "https://price-ninja-proxy.8lueprint3.workers.dev"; // update after deploying worker
+const FLIPP_URL = PROXY_BASE + "/search";
+const SYNONYMS = {
+  chicken:["chicken breast","chicken thighs","whole chicken"],
+  eggs:["large eggs","dozen eggs","free range eggs"],
+  rice:["jasmine rice","basmati rice","long grain rice"],
+  milk:["whole milk","2% milk","skim milk","homo milk"],
+  bread:["white bread","whole wheat bread","sourdough"],
+  pasta:["spaghetti","penne pasta","fettuccine"],
+  coffee:["ground coffee","instant coffee","coffee beans"],
+  ndengu:["mung beans","green lentils"],
+  matoke:["plantain","cooking banana","green banana"],
+  ugali:["cornmeal","corn flour","masa harina"],
+  sukuma:["kale","collard greens"],
+  lentils:["red lentils","green lentils","brown lentils"],
+  ramen:["instant noodles","ramen noodles","mr. noodles"],
+  "oat milk":["oat milk","oatly","oat beverage"]
+};
+
+let allResults = [];
+let currentSort = "savings";
+let currentFilter = "all";
+let postalMap = {};
+
+function loadProvinces() {
+  const country = document.getElementById("country").value;
+  const sel = document.getElementById("province");
+  const citysel = document.getElementById("city");
+  sel.innerHTML = "<option value=''>Select region...</option>";
+  citysel.innerHTML = "<option value=''>Select city...</option>";
+  postalMap = {};
+  const provs = LOCATIONS[country]?.provinces || {};
+  Object.entries(provs)
+    .sort((a,b) => a[1].name.localeCompare(b[1].name))
+    .forEach(([k,v]) => {
+      sel.innerHTML += `<option value="${k}">${v.name}</option>`;
+    });
+  updatePostalDisplay("","");
+}
+
+function loadCities() {
+  const country  = document.getElementById("country").value;
+  const province = document.getElementById("province").value;
+  const citysel  = document.getElementById("city");
+  citysel.innerHTML = "<option value=''>Select city...</option>";
+  postalMap = {};
+  if (!province) return;
+  const cities = LOCATIONS[country]?.provinces?.[province]?.cities || {};
+  postalMap = cities;
+  Object.keys(cities).sort().forEach(city => {
+    citysel.innerHTML += `<option value="${city}">${city}</option>`;
+  });
+}
+
+function updatePostal() {
+  const city    = document.getElementById("city").value;
+  const postal  = postalMap[city] || "";
+  const provSel = document.getElementById("province");
+  const provName = provSel.options[provSel.selectedIndex]?.text || "";
+  const flag    = document.getElementById("country").value === "CA" ? "🇨🇦" : "🇺🇸";
+  if (city && postal) {
+    document.getElementById("location-text").textContent = `${city}, ${provName} ${flag}`;
+    const pd = document.getElementById("postal-display");
+    pd.textContent = postal;
+    pd.style.display = "inline-block";
+  }
+}
+
+function updatePostalDisplay(city, postal) {
+  document.getElementById("location-text").textContent = "Select your location above";
+  document.getElementById("postal-display").style.display = "none";
+}
+
+function getPostal() {
+  return postalMap[document.getElementById("city").value] || "";
+}
+
+async function flippSearch(term, postal, locale) {
+  const url = `${FLIPP_URL}?q=${encodeURIComponent(term)}&postal_code=${postal.replace(/ /g,"")}&locale=${locale}`;
+  const resp = await fetch(url, {
+    headers: { "Accept": "application/json", "User-Agent": "Mozilla/5.0" }
+  });
+  if (!resp.ok) return [];
+  const data = await resp.json();
+  return data.items || data.flyer_items || data.ecom_items || [];
+}
+
+async function doSearch() {
+  const q       = document.getElementById("q").value.trim();
+  const country = document.getElementById("country").value;
+  const city    = document.getElementById("city").value;
+  const postal  = getPostal();
+  const province = document.getElementById("province").value;
+
+  if (!q)      { showToast("Enter something to search for"); return; }
+  if (!postal) { showToast("Please select your city first 📍"); return; }
+
+  const btn = document.getElementById("btn-search");
+  btn.disabled = true;
+  btn.textContent = "Searching...";
+  document.getElementById("results-container").innerHTML = `
+    <div class="state-loading">
+      <div class="spinner"></div>
+      <div>Hunting deals near ${city}...</div>
+    </div>`;
+  document.getElementById("status-bar").style.display = "none";
+  document.getElementById("filter-bar").style.display = "none";
+  document.getElementById("cors-note").style.display = "none";
+
+  const locale = country === "CA" ? "en-ca" : "en-us";
+  const terms  = SYNONYMS[q.toLowerCase()] || [q];
+  const seen   = new Set();
+  allResults   = [];
+
+  try {
+    for (const term of terms.slice(0,3)) {
+      const items = await flippSearch(term, postal, locale);
+      for (const deal of items.slice(0,20)) {
+        const uid = deal.flyer_item_id || deal.id || Math.random();
+        if (seen.has(uid)) continue;
+        seen.add(uid);
+        const current  = deal.current_price ?? deal.price ?? deal.sale_price ?? null;
+        const original = deal.original_price ?? deal.regular_price ?? deal.pre_price ?? null;
+        const name     = deal.name || deal.description || "Unknown item";
+        const store    = deal.merchant_name || deal.retailer || "Unknown";
+        const fid      = deal.flyer_id || "";
+        const url      = fid ? `https://flipp.com/en-ca/flyer/${fid}` : "https://flipp.com";
+        let savingsPct = 0, savingsStr = "";
+        if (current && original) {
+          try {
+            const saved = parseFloat(original) - parseFloat(current);
+            if (saved > 0) {
+              savingsPct = Math.round((saved/parseFloat(original))*100);
+              savingsStr = `Save $${saved.toFixed(2)} (${savingsPct}% off)`;
+            }
+          } catch(e){}
+        }
+        allResults.push({
+          name, store, url,
+          price:       current != null ? parseFloat(current).toFixed(2) : null,
+          original:    original != null ? parseFloat(original).toFixed(2) : null,
+          savings:     savingsStr,
+          savings_pct: savingsPct,
+          expires:     deal.valid_to || "",
+          image:       deal.clean_image_url || deal.clipping_image_url || "",
+        });
+      }
+      await new Promise(r => setTimeout(r, 300));
+    }
+
+    currentSort   = "savings";
+    currentFilter = "all";
+
+    const provName = document.getElementById("province").options[document.getElementById("province").selectedIndex]?.text || province;
+    const flag     = country === "CA" ? "🇨🇦" : "🇺🇸";
+
+    document.getElementById("result-count").textContent    = allResults.length;
+    document.getElementById("result-query").textContent    = `"${q}"`;
+    document.getElementById("result-location").textContent = `${city}, ${provName} ${flag}`;
+    document.getElementById("status-bar").style.display    = "flex";
+    document.getElementById("filter-bar").style.display    = allResults.length ? "flex" : "none";
+
+    renderResults();
+
+  } catch(e) {
+    console.error(e);
+    if (e.name === "TypeError" && e.message.includes("fetch")) {
+      document.getElementById("cors-note").style.display = "block";
+    }
+    document.getElementById("results-container").innerHTML = `
+      <div class="no-results">❌ Could not fetch deals. See note above.</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Search Deals";
+  }
+}
+
+function renderResults() {
+  const container = document.getElementById("results-container");
+  let res = [...allResults];
+
+  if      (currentFilter === "savings") res = res.filter(r => r.savings_pct > 0);
+  else if (currentFilter === "under5")  res = res.filter(r => r.price && parseFloat(r.price) < 5);
+  else if (currentFilter === "under10") res = res.filter(r => r.price && parseFloat(r.price) < 10);
+  else if (currentFilter === "under20") res = res.filter(r => r.price && parseFloat(r.price) < 20);
+
+  if      (currentSort === "price") res.sort((a,b) => (parseFloat(a.price)||999)-(parseFloat(b.price)||999));
+  else if (currentSort === "store") res.sort((a,b) => a.store.localeCompare(b.store));
+  else                              res.sort((a,b) => b.savings_pct-a.savings_pct);
+
+  if (!res.length) {
+    container.innerHTML = `<div class="no-results"><div style="font-size:36px;margin-bottom:12px">🤷</div><div style="color:#8b949e;font-size:14px">No deals found matching your filter</div></div>`;
+    return;
+  }
+  container.innerHTML = `<div class="deals-grid">${res.map(dealCard).join("")}</div>`;
+}
+
+function dealCard(d) {
+  const hasSav  = d.savings_pct > 0;
+  const imgHtml = d.image
+    ? `<img class="card-img" src="${d.image}" alt="" loading="lazy" onerror="this.parentNode.innerHTML=\'<div class=\"card-img no-img\">🛒</div>\'">`
+    : `<div class="card-img no-img">🛒</div>`;
+  const priceHtml = d.price
+    ? `<span class="card-price">$${d.price}</span>${d.original?`<span class="card-original">$${d.original}</span>`:""}`
+    : `<span class="card-price no-price">Price in store</span>`;
+  const savHtml = hasSav ? `<div class="card-savings">✂️ ${d.savings}</div>` : "";
+  const expHtml = d.expires ? `<div class="card-expires">📅 Valid to ${d.expires.substring(0,10)}</div>` : "";
+  return `<div class="deal-card${hasSav?" has-savings":""}" onclick="window.open('${d.url}','_blank')">
+    ${imgHtml}
+    <div class="card-body">
+      <div class="card-store">${d.store}</div>
+      <div class="card-name">${d.name}</div>
+      <div class="card-price-row">${priceHtml}</div>
+      ${savHtml}${expHtml}
+      <a class="card-link" href="${d.url}" target="_blank" onclick="event.stopPropagation()">View Deal →</a>
+    </div>
+  </div>`;
+}
+
+function sortDeals(type) {
+  currentSort = type;
+  document.querySelectorAll(".sort-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById("sort-"+type).classList.add("active");
+  renderResults();
+}
+
+function filterDeals(type, el) {
+  currentFilter = type;
+  document.querySelectorAll(".filter-pill").forEach(p => p.classList.remove("active"));
+  el.classList.add("active");
+  renderResults();
+}
+
+function quickSearch(item) {
+  document.getElementById("q").value = item;
+  if (getPostal()) doSearch();
+  else { document.getElementById("q").focus(); showToast("Select your city first 📍"); }
+}
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 3000);
+}
+
+document.getElementById("q").addEventListener("keydown", e => { if(e.key==="Enter") doSearch(); });
+loadProvinces();
+</script>
+</body>
+</html>
