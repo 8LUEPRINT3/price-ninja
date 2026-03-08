@@ -286,7 +286,8 @@ async function doSearch() {
         const name     = deal.name || deal.description || "Unknown item";
         const store    = deal.merchant_name || deal.retailer || "Unknown";
         const fid      = deal.flyer_id || "";
-        const url      = fid ? `https://flipp.com/en-ca/flyer/${fid}` : "https://flipp.com";
+        const localeSlug = locale === "en-us" ? "en-us" : "en-ca";
+        const url      = fid ? `https://flipp.com/${localeSlug}/flyer/${fid}` : "https://flipp.com";
         let savingsPct = 0, savingsStr = "";
         if (current && original) {
           try {
