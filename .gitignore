@@ -1,0 +1,27 @@
+# Secrets
+.env
+.env.local
+
+# User data (private)
+data/seen_deals.txt
+data/user_wishlist.txt
+data/log.txt
+database/*.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+.pytest_cache
+.coverage
+htmlcov/
+
+# OS
+.DS_Store
+Thumbs.db

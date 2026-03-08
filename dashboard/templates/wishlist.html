@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>🥷 price-ninja — Wishlist</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d1117;color:#e6edf3;font-family:'Segoe UI',system-ui,sans-serif;padding:16px;max-width:600px}
+h1{font-size:22px;color:#58a6ff;margin-bottom:20px}
+nav{display:flex;gap:12px;margin-bottom:20px}
+nav a{color:#58a6ff;font-size:13px;text-decoration:none;border-bottom:2px solid #58a6ff;padding-bottom:2px}
+form{display:flex;gap:8px;margin-bottom:20px}
+input{flex:1;background:#161b22;border:1px solid #21262d;color:#e6edf3;padding:8px 12px;border-radius:6px;font-size:13px}
+button{background:#238636;border:none;color:#fff;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px}
+.item{background:#161b22;border:1px solid #21262d;border-radius:6px;padding:10px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.item-name{font-size:13px}
+.item-date{font-size:10px;color:#484f58}
+.del{background:none;border:1px solid #f8514933;color:#f85149;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px}
+.del:hover{background:#f8514922}
+</style>
+</head>
+<body>
+<h1>🛒 Your Wishlist</h1>
+<nav><a href="/">Dashboard</a><a href="/wishlist">Wishlist</a></nav>
+<form method="POST">
+  <input name="item" placeholder="Add item (e.g. oat milk, ramen)..." required/>
+  <button type="submit">+ Add</button>
+</form>
+{% for item in items %}
+<div class="item">
+  <div>
+    <div class="item-name">{{ item.item }}</div>
+    <div class="item-date">Added {{ item.added }}</div>
+  </div>
+  <form method="POST" action="/wishlist/delete/{{ item.id }}">
+    <button class="del" type="submit">✕ Remove</button>
+  </form>
+</div>
+{% else %}
+<p style="color:#484f58">No items yet. Add something above.</p>
+{% endfor %}
+</body>
+</html>

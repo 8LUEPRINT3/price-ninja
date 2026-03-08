@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>🥷 price-ninja dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d1117;color:#e6edf3;font-family:'Segoe UI',system-ui,sans-serif;padding:16px}
+h1{font-size:22px;color:#58a6ff;margin-bottom:4px}
+h2{font-size:13px;color:#484f58;letter-spacing:1px;margin-bottom:20px}
+.stats{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.stat{background:#161b22;border:1px solid #21262d;border-radius:8px;padding:12px 18px;min-width:130px}
+.stat-val{font-size:28px;font-weight:700;color:#56d364}
+.stat-lbl{font-size:10px;color:#484f58;margin-top:2px}
+.deals{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.deal{background:#161b22;border:1px solid #21262d;border-radius:8px;padding:14px}
+.deal-title{font-size:13px;font-weight:600;margin-bottom:8px}
+.deal-store{font-size:11px;color:#484f58;margin-bottom:4px}
+.deal-price{font-size:20px;font-weight:700;color:#56d364}
+.deal-original{font-size:12px;color:#484f58;text-decoration:line-through;margin-left:6px}
+.deal-savings{font-size:11px;color:#e3b341;margin-top:2px}
+.deal-source{font-size:10px;color:#58a6ff;margin-top:6px}
+.deal-expires{font-size:10px;color:#484f58}
+.deal-link{display:inline-block;margin-top:8px;font-size:11px;color:#58a6ff;text-decoration:none}
+.cat{display:inline-block;font-size:9px;padding:2px 7px;border-radius:3px;margin-bottom:6px;font-weight:700}
+.cat-food{background:#56d36422;color:#56d364}
+.cat-tech{background:#58a6ff22;color:#58a6ff}
+.cat-grocery{background:#56d36422;color:#56d364}
+.cat-fallback{background:#48495822;color:#484f58}
+.cat-general{background:#e3b34122;color:#e3b341}
+nav{display:flex;gap:12px;margin-bottom:20px}
+nav a{color:#58a6ff;font-size:13px;text-decoration:none;border-bottom:2px solid #58a6ff;padding-bottom:2px}
+</style>
+</head>
+<body>
+<h1>🥷 price-ninja</h1>
+<h2>STEALTH DEAL INTELLIGENCE PLATFORM v2.0</h2>
+<nav>
+  <a href="/">Dashboard</a>
+  <a href="/wishlist">Wishlist</a>
+  <a href="/api/deals">API</a>
+</nav>
+<div class="stats">
+  <div class="stat"><div class="stat-val">{{ stats.total or 0 }}</div><div class="stat-lbl">DEALS TRACKED</div></div>
+  <div class="stat"><div class="stat-val" style="color:#e3b341">${{ "%.2f"|format(stats.min_price or 0) }}</div><div class="stat-lbl">LOWEST PRICE</div></div>
+  <div class="stat"><div class="stat-val" style="color:#58a6ff">{{ deals|length }}</div><div class="stat-lbl">ACTIVE DEALS</div></div>
+</div>
+{% if deals %}
+<div class="deals">
+{% for deal in deals %}
+<div class="deal">
+  <span class="cat cat-{{ deal.category }}">{{ deal.category|upper }}</span>
+  <div class="deal-title">{{ deal.title }}</div>
+  <div class="deal-store">🏪 {{ deal.store or deal.source }}</div>
+  {% if deal.price %}
+  <div>
+    <span class="deal-price">${{ deal.price }}</span>
+    {% if deal.original %}<span class="deal-original">${{ deal.original }}</span>{% endif %}
+  </div>
+  {% if deal.savings %}<div class="deal-savings">✂️ {{ deal.savings }}</div>{% endif %}
+  {% endif %}
+  {% if deal.expires %}<div class="deal-expires">📅 Expires: {{ deal.expires }}</div>{% endif %}
+  <div class="deal-source">📡 {{ deal.source }}</div>
+  {% if deal.url %}<a class="deal-link" href="{{ deal.url }}" target="_blank">→ View Deal</a>{% endif %}
+</div>
+{% endfor %}
+</div>
+{% else %}
+<p style="color:#484f58;margin-top:40px;text-align:center">No deals yet. Run <code>python main.py</code> to start hunting.</p>
+{% endif %}
+</body>
+</html>

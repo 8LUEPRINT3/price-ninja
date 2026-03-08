@@ -1,0 +1,22 @@
+{
+  "ndengu":    {"synonyms": ["mung beans", "moong dal", "green lentils"], "category": "pulse"},
+  "matoke":    {"synonyms": ["plantain", "green banana", "cooking banana"], "category": "produce"},
+  "dhania":    {"synonyms": ["cilantro", "coriander leaves", "fresh coriander"], "category": "herb"},
+  "ugali":     {"synonyms": ["cornmeal", "corn flour", "maize flour", "masa"], "category": "grain"},
+  "sukuma":    {"synonyms": ["kale", "collard greens", "sukuma wiki"], "category": "produce"},
+  "ramen":     {"synonyms": ["instant noodles", "ramen noodles", "nissin"], "category": "dry goods"},
+  "oat milk":  {"synonyms": ["oat milk", "oatly", "oat beverage", "planet oat"], "category": "dairy-alt"},
+  "eggs":      {"synonyms": ["large eggs", "dozen eggs", "free range eggs", "white eggs"], "category": "protein"},
+  "rice":      {"synonyms": ["jasmine rice", "basmati rice", "long grain rice", "white rice"], "category": "grain"},
+  "chicken":   {"synonyms": ["chicken breast", "chicken thigh", "whole chicken", "chicken legs"], "category": "protein"},
+  "pasta":     {"synonyms": ["spaghetti", "penne", "pasta", "fusilli", "macaroni"], "category": "dry goods"},
+  "bread":     {"synonyms": ["white bread", "whole wheat bread", "sandwich bread", "loaf"], "category": "bakery"},
+  "milk":      {"synonyms": ["2% milk", "whole milk", "skim milk", "1% milk"], "category": "dairy"},
+  "butter":    {"synonyms": ["unsalted butter", "salted butter", "margarine"], "category": "dairy"},
+  "lentils":   {"synonyms": ["red lentils", "green lentils", "brown lentils", "dal"], "category": "pulse"},
+  "tuna":      {"synonyms": ["canned tuna", "tuna in water", "flaked tuna"], "category": "protein"},
+  "onion":     {"synonyms": ["yellow onion", "white onion", "cooking onion", "onions"], "category": "produce"},
+  "tomato":    {"synonyms": ["roma tomato", "vine tomato", "beefsteak tomato", "canned tomato"], "category": "produce"},
+  "garlic":    {"synonyms": ["fresh garlic", "garlic bulb", "minced garlic"], "category": "produce"},
+  "potato":    {"synonyms": ["russet potato", "yellow potato", "red potato", "potatoes"], "category": "produce"}
+}
