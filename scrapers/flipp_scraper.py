@@ -8,11 +8,10 @@ from typing import List, Dict
 from utils.logger import log
 from utils.price_link_generator import generate_store_links
 
-FLIPP_URL = "https://flipp.com/api/2/items"
+FLIPP_URL = "https://backflipp.wishabi.com/flipp/items/search"
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
                   "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Referer": "https://flipp.com/",
     "Accept": "application/json",
 }
 
@@ -56,8 +55,7 @@ def search_flyer_deals(wishlist: List[str]) -> List[Dict]:
             params = {
                 "q": term,
                 "postal_code": postal_code.replace(" ", ""),
-                "locale": "en-CA",
-                "store_id": "",
+                "locale": "en-ca",
             }
             try:
                 resp = requests.get(FLIPP_URL, headers=HEADERS,
@@ -67,34 +65,42 @@ def search_flyer_deals(wishlist: List[str]) -> List[Dict]:
                     continue
 
                 data = resp.json()
-                items = data if isinstance(data, list) else data.get("items", [])
+                # Response has: items, ecom_items, flyer_items
+                items = (data.get("items") or
+                         data.get("flyer_items") or
+                         data.get("ecom_items") or [])
 
                 for deal in items[:5]:
-                    store = str(deal.get("merchant_name", "")).lower()
-                    if any(b in store for b in blocked):
+                    store_name = str(deal.get("merchant_name", deal.get("retailer", ""))).lower()
+                    if any(b in store_name for b in blocked):
                         continue
 
-                    current  = deal.get("current_price") or deal.get("price")
-                    original = deal.get("original_price") or deal.get("pre_price")
+                    current  = deal.get("current_price") or deal.get("price") or deal.get("sale_price")
+                    original = deal.get("original_price") or deal.get("regular_price") or deal.get("pre_price")
+                    name     = deal.get("name") or deal.get("description") or "Unknown item"
 
                     # Calculate savings
                     savings = ""
                     if current and original:
                         try:
                             saved = float(original) - float(current)
-                            pct   = (saved / float(original)) * 100
-                            savings = f"Save ${saved:.2f} ({pct:.0f}%)"
+                            if saved > 0:
+                                pct   = (saved / float(original)) * 100
+                                savings = f"Save ${saved:.2f} ({pct:.0f}%)"
                         except Exception:
                             pass
 
+                    flyer_id = deal.get("flyer_id", "")
+                    url = f"https://flipp.com/en-ca/flyer/{flyer_id}" if flyer_id else "https://flipp.com"
+
                     result = {
-                        "title":    deal.get("name", "Unknown item"),
+                        "title":    name,
                         "price":    current,
                         "original": original,
                         "savings":  savings,
-                        "store":    deal.get("merchant_name", "Unknown"),
-                        "url":      deal.get("flyer_url") or "https://flipp.com",
-                        "expires":  deal.get("valid_to", "Unknown"),
+                        "store":    deal.get("merchant_name", deal.get("retailer", "Unknown")),
+                        "url":      url,
+                        "expires":  deal.get("valid_to", deal.get("sale_story", "Unknown")),
                         "category": keyword_map.get(item, {}).get("category", "general"),
                         "query":    item,
                         "source":   "Flipp",
