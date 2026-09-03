@@ -79,6 +79,26 @@ select:focus{border-color:#58a6ff}
 .card-expires{font-size:10px;color:#484f58;margin-bottom:8px}
 .card-link{display:block;text-align:center;background:#21262d;color:#58a6ff;text-decoration:none;padding:6px;border-radius:6px;font-size:12px;font-weight:600;transition:background .15s}
 .card-link:hover{background:#30363d}
+/* RECALLS */
+.recalls-note{max-width:1200px;margin:14px auto 0;font-size:12px;color:#8b949e;line-height:1.6}
+.recalls-list{display:flex;flex-direction:column;gap:10px}
+.recall-card{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:16px;transition:border-color .2s}
+.recall-card:hover{border-color:#30363d}
+.recall-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.recall-class{font-size:11px;font-weight:800;padding:2px 10px;border-radius:4px;color:#fff}
+.recall-class.c1{background:#f85149}
+.recall-class.c2{background:#d29922}
+.recall-class.c3{background:#2f81f7}
+.recall-class.none{background:#484f58}
+.recall-source{font-size:11px;color:#484f58;text-transform:uppercase;letter-spacing:.5px}
+.recall-status{font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:auto}
+.recall-status.ongoing{background:#238636;color:#fff}
+.recall-status.terminated{background:#21262d;color:#8b949e}
+.recall-name{font-size:14px;font-weight:700;line-height:1.4;margin-bottom:6px}
+.recall-reason{font-size:12px;color:#c9d1d9;line-height:1.5;margin-bottom:6px}
+.recall-meta{font-size:11px;color:#8b949e;margin-bottom:8px}
+.recall-link{color:#58a6ff;text-decoration:none;font-size:12px;font-weight:600}
+.recall-link:hover{text-decoration:underline}
 .state-empty{text-align:center;padding:80px 20px;color:#484f58}
 .state-empty .emoji{font-size:48px;margin-bottom:16px}
 .state-empty h3{font-size:16px;color:#8b949e;margin-bottom:8px}
@@ -105,12 +125,13 @@ select:focus{border-color:#58a6ff}
 <div class="mode-tabs">
   <div class="mode-tab active" id="tab-single" onclick="setMode('single')">🔍 Single Search</div>
   <div class="mode-tab" id="tab-list" onclick="setMode('list')">🛒 Shopping List</div>
+  <div class="mode-tab" id="tab-recalls" onclick="setMode('recalls')">⚠️ Recalls</div>
 </div>
 
 <div class="search-panel">
   <!-- Location row (shared) -->
   <div class="search-row" id="location-row">
-    <select id="country" onchange="loadProvinces()">
+    <select id="country" onchange="loadProvinces(); onCountryChange()">
       <option value="CA">🇨🇦 Canada</option>
       <option value="US">🇺🇸 United States</option>
     </select>
@@ -190,6 +211,18 @@ select:focus{border-color:#58a6ff}
         <div class="list-items" id="list-pills">
           <span class="list-empty-hint">Add items above to build your shopping list</span>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECALLS MODE -->
+  <div id="panel-recalls" style="display:none">
+    <div style="max-width:1200px;margin:14px auto 0">
+      <div class="search-row">
+        <button class="btn-search" onclick="loadRecalls()" id="btn-recalls">↻ Check Recalls</button>
+      </div>
+      <div class="recalls-note">
+        ⚠️ Food recalls &amp; safety advisories from official sources — <b>Health Canada / CFIA</b> (Canada) and the <b>U.S. FDA</b> (United States). Select your country above, then check. <b>Class I / Class 1</b> = highest risk (stop using; return or discard). <b>Class II</b> = moderate. <b>Class III</b> = low. Always follow the notice's instructions.
       </div>
     </div>
   </div>
@@ -279,12 +312,15 @@ function setMode(mode) {
   currentMode = mode;
   document.getElementById("tab-single").classList.toggle("active", mode === "single");
   document.getElementById("tab-list").classList.toggle("active", mode === "list");
-  document.getElementById("panel-single").style.display = mode === "single" ? "" : "none";
-  document.getElementById("panel-list").style.display   = mode === "list"   ? "" : "none";
+  document.getElementById("tab-recalls").classList.toggle("active", mode === "recalls");
+  document.getElementById("panel-single").style.display   = mode === "single"  ? "" : "none";
+  document.getElementById("panel-list").style.display     = mode === "list"    ? "" : "none";
+  document.getElementById("panel-recalls").style.display  = mode === "recalls" ? "" : "none";
   document.getElementById("status-bar").style.display   = "none";
   document.getElementById("filter-bar").style.display   = "none";
   document.getElementById("list-status").style.display  = "none";
   document.getElementById("cors-note").style.display    = "none";
+  if (mode === "recalls") { loadRecalls(); return; }
   document.getElementById("results-container").innerHTML = `
     <div class="state-empty">
       <div class="emoji">🥷</div>
@@ -599,6 +635,104 @@ function quickSearch(item) {
   document.getElementById("q").value = item;
   if (getPostal()) doSearch();
   else { document.getElementById("q").focus(); showToast("Select your city first 📍"); }
+}
+
+// ── RECALLS (CFIA / FDA) ──────────────────────────────
+function esc(s){return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+
+function onCountryChange() {
+  if (currentMode === "recalls") loadRecalls();
+}
+
+function recallClassColor(c) {
+  const s = (c || "").trim();
+  if (/^Class (I|1)$/i.test(s)) return "c1";
+  if (/^Class (II|2)$/i.test(s)) return "c2";
+  if (/^Class (III|3)$/i.test(s)) return "c3";
+  return "none";
+}
+
+function recallCard(r) {
+  const cls = recallClassColor(r.classification);
+  const statusBadge = r.status && /ongoing/i.test(r.status)
+    ? `<span class="recall-status ongoing">${esc(r.status)}</span>`
+    : (r.status ? `<span class="recall-status terminated">${esc(r.status)}</span>` : "");
+  return `<div class="recall-card">
+    <div class="recall-head">
+      <span class="recall-class ${cls}">${esc(r.classification || "Not Classified")}</span>
+      <span class="recall-source">${esc(r.source)}</span>
+      ${statusBadge}
+    </div>
+    <div class="recall-name">${esc(r.title)}</div>
+    ${r.reason ? `<div class="recall-reason">⚠️ ${esc(r.reason)}</div>` : ""}
+    <div class="recall-meta">${esc(r.firm)}${r.date ? " · " + esc(r.date) : ""}</div>
+    <a class="recall-link" href="${esc(r.url)}" target="_blank" rel="noopener">View official notice →</a>
+  </div>`;
+}
+
+async function fetchUsaRecalls() {
+  const url = "https://api.fda.gov/food/enforcement.json?search=product_type:%22Food%22&sort=report_date:desc&limit=60";
+  const resp = await fetch(url, { headers: { "Accept": "application/json" } });
+  if (!resp.ok) throw new Error("FDA API error " + resp.status);
+  const data = await resp.json();
+  return (data.results || []).map((r) => ({
+    source: "FDA",
+    title: r.product_description || "Unnamed product",
+    reason: r.reason_for_recall || "",
+    firm: r.recalling_firm || "",
+    classification: r.classification || "Not Classified",
+    date: (r.report_date || "").replace(/^(\d{4})(\d{2})(\d{2})$/, "$1-$2-$3"),
+    status: r.status || "",
+    url: "https://www.fda.gov/safety/recalls-market-withdrawals-safety-alerts",
+  }));
+}
+
+async function fetchCanadaRecalls() {
+  const resp = await fetch(`${PROXY_BASE}/recalls`, { headers: { "Accept": "application/json" } });
+  if (!resp.ok) throw new Error("CFIA proxy error " + resp.status);
+  const data = await resp.json();
+  return (Array.isArray(data) ? data : []).map((r) => ({
+    source: "CFIA",
+    title: r.product || r.title || "Unnamed product",
+    reason: r.issue || "",
+    firm: "Health Canada / CFIA",
+    classification: r.recallClass || "Not Classified",
+    date: r.updated || "",
+    status: "",
+    url: r.url || "https://recalls-rappels.canada.ca/en",
+  }));
+}
+
+function renderRecalls(list, country) {
+  const container = document.getElementById("results-container");
+  const flag = country === "CA" ? "🇨🇦" : "🇺🇸";
+  if (!list.length) {
+    container.innerHTML = `<div class="no-results"><div style="font-size:36px;margin-bottom:12px">✅</div><div style="color:#8b949e;font-size:14px">No active food recalls found right now.</div></div>`;
+    return;
+  }
+  container.innerHTML = `
+    <div style="margin-bottom:12px;font-size:12px;color:#484f58">${flag} <span class="result-count">${list.length}</span> recent food recalls &amp; advisories · ${country === "CA" ? "Health Canada / CFIA" : "U.S. FDA"}</div>
+    <div class="recalls-list">${list.map(recallCard).join("")}</div>`;
+}
+
+async function loadRecalls() {
+  const country = document.getElementById("country").value;
+  const container = document.getElementById("results-container");
+  container.innerHTML = `<div class="state-loading"><div class="spinner"></div><div>Checking ${country === "CA" ? "Health Canada / CFIA" : "U.S. FDA"} food recalls...</div></div>`;
+  document.getElementById("status-bar").style.display  = "none";
+  document.getElementById("filter-bar").style.display  = "none";
+  document.getElementById("list-status").style.display = "none";
+  document.getElementById("cors-note").style.display   = "none";
+  try {
+    const list = country === "CA" ? await fetchCanadaRecalls() : await fetchUsaRecalls();
+    renderRecalls(list, country);
+  } catch (e) {
+    console.error(e);
+    const hint = country === "CA"
+      ? "The Canada feed needs the Cloudflare Worker redeployed with the updated worker.js (see repo README)."
+      : "Try again in a moment.";
+    container.innerHTML = `<div class="no-results">❌ Could not load recalls. ${hint}</div>`;
+  }
 }
 
 // ── TOAST ─────────────────────────────────────────────

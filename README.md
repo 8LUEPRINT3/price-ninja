@@ -13,6 +13,7 @@
 - Filter by: On Sale / Under $5 / Under $10 / Under $20
 - Mobile-friendly dark UI
 - Synonym search (search "chicken" → finds "chicken breast", "chicken thighs" etc.)
+- ⚠️ **Recalls** tab — live food recalls & advisories from official sources (🇺🇸 U.S. FDA via openFDA · 🇨🇦 Health Canada / CFIA), with risk classification (Class I / II / III)
 
 ## Deploy Your Own
 
@@ -25,6 +26,8 @@
 3. Click **Deploy**
 4. Note your worker URL: `https://price-ninja-proxy.YOUR_SUBDOMAIN.workers.dev`
 5. Update `PROXY_BASE` in `index.html` line ~215 to match your worker URL
+
+> **Note:** the worker now handles two paths — `/search` (Flipp deals) and `/recalls` (CFIA food recalls). Redeploying the worker is required for the 🇨🇦 Canada recalls feed; the 🇺🇸 U.S. recalls feed calls openFDA directly and works without the worker.
 
 ### 3. Enable GitHub Pages
 
