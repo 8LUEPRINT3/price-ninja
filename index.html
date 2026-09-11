@@ -181,7 +181,7 @@ select:focus{border-color:#58a6ff}
       <div class="search-row" style="flex-wrap:nowrap">
         <div class="search-box" style="flex:3">
           <span class="icon">➕</span>
-          <input type="text" id="list-input" placeholder="Type an item and press Enter or click Add..." autocomplete="off"/>
+          <input type="text" id="list-input" placeholder="Add items — comma-separated OK (e.g. chicken, rice, eggs)..." autocomplete="off"/>
         </div>
         <button class="btn-add" onclick="addToList()">Add</button>
         <button class="btn-search" onclick="doListSearch()" id="btn-list-search">Find All Deals</button>
@@ -306,6 +306,7 @@ let currentFilter = "all";
 let postalMap = {};
 let shoppingList = [];
 let currentMode = "single";
+const MAX_ITEMS = 60;
 
 // ── MODE ──────────────────────────────────────────────
 function setMode(mode) {
@@ -488,21 +489,44 @@ function renderResults() {
 }
 
 // ── SHOPPING LIST ─────────────────────────────────────
+function splitItems(raw) {
+  return String(raw).split(/[,;\n]+/).map(s => s.trim()).filter(Boolean);
+}
+
 function addToList() {
   const input = document.getElementById("list-input");
   const val = input.value.trim();
   if (!val) return;
-  addItem(val);
+  addItems(splitItems(val));
   input.value = "";
   input.focus();
 }
 
 function addItem(item) {
-  const norm = item.toLowerCase().trim();
-  if (shoppingList.includes(norm)) { showToast(`"${norm}" already in list`); return; }
-  if (shoppingList.length >= 20)   { showToast("Max 20 items"); return; }
-  shoppingList.push(norm);
-  renderList();
+  addItems(splitItems(item));
+}
+
+function addItems(items) {
+  let added = 0, dup = 0, over = 0;
+  for (const raw of items) {
+    const norm = raw.toLowerCase().trim();
+    if (!norm) continue;
+    if (shoppingList.includes(norm)) { dup++; continue; }
+    if (shoppingList.length >= MAX_ITEMS) { over++; continue; }
+    shoppingList.push(norm);
+    added++;
+  }
+  if (added) renderList();
+  if (added && (dup || over)) {
+    const parts = [`${added} added`];
+    if (dup) parts.push(`${dup} already in list`);
+    if (over) parts.push(`${over} skipped (max ${MAX_ITEMS})`);
+    showToast(parts.join(" · "));
+  } else if (dup && !added) {
+    showToast("Already in list");
+  } else if (over && !added) {
+    showToast(`List full (max ${MAX_ITEMS} items)`);
+  }
 }
 
 function removeItem(item) {
